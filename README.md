@@ -1,66 +1,70 @@
 # Prueba tecnica - Modelo de fraude en seguros
 
-Este repositorio contiene la entrega compacta de la prueba tecnica de cientifico de datos para un modelo de fraude en seguros. La solucion se enfoca en priorizar casos de mayor riesgo mediante un `score_fraude`, no en tomar decisiones automaticas de rechazo.
+Entrega compacta de la prueba tecnica de cientifico de datos para construir un modelo de priorizacion de fraude en seguros usando Python y Databricks Free Edition.
 
-## Archivos incluidos
+La solucion no busca rechazar reclamaciones automaticamente. Su objetivo es generar un `score_fraude` para ordenar los casos de mayor riesgo y apoyar a equipos de investigacion, auditoria y siniestros.
+
+## Estructura del repositorio
 
 ```text
 .
-|-- Muestra_Base_fraude.xlsx
-|-- Prueba_tecnica_Cientifico_Datos.pdf
-|-- 01_modelo_fraude_pyspark.py
-|-- 01_modelo_fraude_pyspark.html
-|-- databricks_model_metrics_real.csv
-|-- databricks_decile_lift_real.csv.csv
-|-- databricks_scored_top100_real.csv
-|-- sustentacion_requerimientos_prueba_nueva_v2.pptx
-`-- README.md
+|-- README.md
+|-- data/
+|   `-- Muestra_Base_fraude.xlsx
+|-- docs/
+|   `-- Prueba_tecnica_Cientifico_Datos.pdf
+|-- databricks/
+|   |-- 01_modelo_fraude_pyspark.py
+|   `-- 01_modelo_fraude_pyspark.html
+|-- outputs/
+|   |-- databricks_model_metrics_real.csv
+|   |-- databricks_decile_lift_real.csv
+|   `-- databricks_scored_top100_real.csv
+`-- deliverables/
+    `-- presentacion_sustentacion_fraude_seguros.pptx
 ```
 
-## Descripcion de los archivos
+## Contenido
 
-- `Muestra_Base_fraude.xlsx`: base original de la prueba tecnica.
-- `Prueba_tecnica_Cientifico_Datos.pdf`: enunciado de la prueba.
-- `01_modelo_fraude_pyspark.py`: notebook/script descargado desde Databricks con el flujo de preparacion, entrenamiento, evaluacion, scoring y guardado de resultados en Delta.
-- `01_modelo_fraude_pyspark.html`: version HTML del notebook/modelo para revision rapida sin abrir Databricks.
-- `databricks_model_metrics_real.csv`: metricas reales exportadas desde Databricks para comparar los modelos entrenados.
-- `databricks_decile_lift_real.csv.csv`: tabla real exportada desde Databricks con deciles, tasa de fraude y lift.
-- `databricks_scored_top100_real.csv`: top 100 de casos puntuados por mayor `score_fraude`, exportado desde Databricks.
-- `sustentacion_requerimientos_prueba_nueva_v2.pptx`: presentacion final de sustentacion con resultados, explicabilidad, scoring, arquitectura conceptual y conclusiones de negocio.
+- `data/Muestra_Base_fraude.xlsx`: base original entregada para la prueba.
+- `docs/Prueba_tecnica_Cientifico_Datos.pdf`: enunciado de la prueba tecnica.
+- `databricks/01_modelo_fraude_pyspark.py`: notebook/script exportado desde Databricks con preparacion, entrenamiento, evaluacion, scoring y guardado en Delta.
+- `databricks/01_modelo_fraude_pyspark.html`: version HTML del notebook para revision rapida sin abrir Databricks.
+- `outputs/databricks_model_metrics_real.csv`: metricas reales exportadas desde Databricks.
+- `outputs/databricks_decile_lift_real.csv`: lift por deciles exportado desde Databricks.
+- `outputs/databricks_scored_top100_real.csv`: top 100 de casos puntuados por mayor `score_fraude`.
+- `deliverables/presentacion_sustentacion_fraude_seguros.pptx`: presentacion final con resultados, explicabilidad, scoring, arquitectura conceptual y conclusiones de negocio.
 
 ## Objetivo de la solucion
 
 Construir un modelo supervisado para estimar la probabilidad de fraude en reclamaciones de seguros y convertir esa probabilidad en una bandeja priorizada de investigacion.
 
-La salida esperada no es una decision automatica, sino una priorizacion operativa:
+Salida esperada del scoring:
 
-- `score_fraude`: probabilidad estimada o puntaje relativo de riesgo.
-- `decil`: grupo de riesgo segun orden descendente del score.
-- `prioridad`: nivel de atencion recomendado para negocio.
-- `fecha_scoring`: fecha en la que se ejecuto el scoring.
-- `version_modelo`: referencia del modelo usado.
+- `score_fraude`: probabilidad o puntaje relativo de riesgo.
+- `decil`: posicion del caso dentro del ranking de riesgo.
+- `prioridad`: nivel sugerido de revision.
+- `fecha_scoring`: fecha de ejecucion del scoring.
+- `version_modelo`: modelo usado para puntuar.
 
-## Resumen tecnico
+## Flujo tecnico
 
 El notebook de Databricks realiza:
 
 1. Lectura de la tabla fuente.
 2. Limpieza de nombres de columnas.
-3. Creacion de variable objetivo binaria `label`.
-4. Analisis de calidad de datos.
+3. Creacion de la variable objetivo binaria `label`.
+4. Revision de calidad de datos.
 5. Ingenieria de variables temporales.
 6. Exclusion de variables con riesgo de fuga de informacion.
 7. Split temporal entrenamiento/prueba.
-8. Entrenamiento de tres modelos:
-   - `logistic_regression`
-   - `random_forest`
-   - `gradient_boosting`
+8. Entrenamiento de `logistic_regression`, `random_forest` y `gradient_boosting`.
 9. Evaluacion con ROC-AUC y area under PR.
 10. Calculo de lift por deciles.
 11. Generacion de casos puntuados.
 12. Guardado de resultados en tablas Delta.
 
-## Resultado principal en Databricks
+## Resultado principal
 
 El mejor modelo ejecutado en Databricks fue `random_forest`.
 
@@ -70,7 +74,7 @@ El mejor modelo ejecutado en Databricks fue `random_forest`.
 | Gradient boosting | 0.706 | 0.523 |
 | Logistic regression | 0.294 | 0.260 |
 
-El ranking por deciles mostro concentracion de fraude en los primeros grupos:
+El ranking por deciles evidencia concentracion de fraude en los primeros grupos:
 
 | Decil | Casos | Fraudes | Tasa fraude | Lift |
 | ---: | ---: | ---: | ---: | ---: |
@@ -79,21 +83,9 @@ El ranking por deciles mostro concentracion de fraude en los primeros grupos:
 | 3 | 320 | 175 | 54.7% | 1.64 |
 | 10 | 319 | 15 | 4.7% | 0.14 |
 
-Interpretacion: el modelo es util para ordenar la cola de investigacion, porque los primeros deciles concentran una tasa de fraude superior a los ultimos deciles.
-
-## Archivos de resultados reales
-
-Los tres archivos `databricks_*_real.csv` son exportaciones directas de los resultados obtenidos en Databricks:
-
-- `databricks_model_metrics_real.csv`: permite validar que el modelo ganador fue `random_forest`.
-- `databricks_decile_lift_real.csv.csv`: permite revisar la concentracion de fraude por deciles y el lift del score.
-- `databricks_scored_top100_real.csv`: permite inspeccionar casos priorizados, score asociado, decil y variables de negocio usadas para interpretar patrones.
-
-Estos archivos se incluyen para que el evaluador pueda revisar los resultados sin necesidad de ejecutar nuevamente el notebook.
+Interpretacion: el modelo sirve para priorizar investigaciones, porque los primeros deciles concentran una tasa de fraude mayor que los ultimos.
 
 ## Consultas SQL utiles en Databricks
-
-Estas consultas se pueden ejecutar en el `SQL Editor` de Databricks despues de correr el notebook.
 
 ### Ranking de modelos
 
@@ -192,32 +184,23 @@ SELECT
 FROM workspace.default.fraude_scored_test;
 ```
 
-### Consulta de bandeja priorizada
-
-```sql
-SELECT *
-FROM workspace.default.vw_fraude_bandeja_priorizada
-ORDER BY score_fraude DESC
-LIMIT 100;
-```
-
 ## Decisiones tecnicas clave
 
-- Se usa split temporal para simular mejor el comportamiento futuro del modelo.
-- Se excluyen variables con riesgo de leakage, como estado final, cierre del siniestro, pagos o informacion posterior al momento de scoring.
-- Se generan variables temporales en dias para capturar demoras y antiguedades operativas.
-- Se evalua con metricas adecuadas para fraude: ROC-AUC, area under PR y lift por deciles.
-- El score se interpreta como una herramienta de priorizacion, no como prueba definitiva de fraude.
+- Split temporal para aproximar comportamiento futuro.
+- Exclusion de variables con riesgo de leakage, como estado final, cierre, pagos o informacion posterior al momento de scoring.
+- Creacion de variables temporales para capturar demoras y antiguedades operativas.
+- Evaluacion con metricas adecuadas para fraude: ROC-AUC, area under PR y lift por deciles.
+- Interpretacion del score como herramienta de priorizacion, no como prueba definitiva de fraude.
 
 ## Lectura de negocio
 
-La solucion permite focalizar la capacidad investigativa en los casos con mayor probabilidad de fraude. En lugar de revisar todos los casos por igual, el negocio puede empezar por los deciles 1 y 2, donde se concentra una mayor tasa de fraude observada.
+La solucion permite focalizar la capacidad investigativa en los casos con mayor probabilidad de fraude. En lugar de revisar todos los casos por igual, el negocio puede iniciar por los deciles 1 y 2, donde se concentra mayor tasa de fraude observada.
 
-El uso recomendado es una bandeja de trabajo para analistas, investigadores o auditoria, con trazabilidad de score, fecha de scoring y version del modelo.
+Uso recomendado: bandeja de trabajo para investigadores o auditoria, con trazabilidad de score, decil, fecha de scoring y version del modelo.
 
 ## Limitaciones
 
 - La etiqueta historica puede reflejar sesgos de investigacion previa.
 - El modelo requiere validacion con datos posteriores antes de usarse en produccion.
 - El score no reemplaza evidencia documental ni criterio experto.
-- Debe monitorearse la estabilidad del score, lift por deciles, drift de variables y desempeno con etiquetas confirmadas.
+- Deben monitorearse drift, lift por deciles, distribucion de score y desempeno con etiquetas confirmadas.
